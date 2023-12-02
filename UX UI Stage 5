@@ -1,0 +1,103 @@
+import csv
+import math
+
+# {participantName: InstanceOfParticipant}
+participantDict = {}
+averageResponseTimeByTest = {"Test1": 0, "Test2": 0, "Test3": 0, "Test4": 0}
+standardDeviationByTest = {"Test1": 0, "Test2": 0, "Test3": 0, "Test4": 0}
+
+
+class Participant:
+
+    def __init__(self, name, dateProcessed, age, condition):
+        self.name = name
+        self.dateProcessed = dateProcessed
+        self.age = age
+        self.condition = condition
+        self.testTimes = []
+        self.comments = ""
+
+
+def getData(csvFileName):
+    with open(csvFileName, newline='') as csvfile:
+        dataReader = csv.reader(csvfile, delimiter=',', quotechar='"')
+        rowCounter = 0
+        for row in dataReader:
+            if rowCounter != 0:
+                participantName = row[0]
+                participantDict[participantName] = Participant(row[0], row[1], row[2], row[3])
+                for num in range(4, 8):
+                    resultCell = row[num].split()
+                    if len(resultCell) != 1:
+                        result = resultCell[1]
+                    else:
+                        result = resultCell[0]
+                    if result != "Unusable":
+                        result = int(result)
+                    participantDict[participantName].testTimes.append(result)
+                participantDict[participantName].comments = row[8]
+            rowCounter += 1
+
+
+def getMeans(dictionary):
+    listOfTestTimeLists = [[], [], [], []]
+    listOfMeans = []
+    for key in dictionary:
+        individualTestTimeList = dictionary[key].testTimes
+        for i in range(4):
+            listOfTestTimeLists[i].append(individualTestTimeList[i])
+    for i in range(4):
+        runningTotal = 0
+        numberOfTimes = 0
+        listOfInterest = listOfTestTimeLists[i]
+        for time in listOfInterest:
+            if time != "Unusable":
+                runningTotal += time
+                numberOfTimes += 1
+        mean = runningTotal / numberOfTimes
+        listOfMeans.append(mean)
+    for key in averageResponseTimeByTest:
+        averageResponseTimeByTest[key] = round(listOfMeans[0], 4)
+        listOfMeans.pop(0)
+
+
+def getStandardDeviations(participants, responseTimes):
+    listOfStandardDeviations = []
+    listOfAverages = []
+    for key in responseTimes:
+        listOfAverages.append(responseTimes[key])
+    for i in range(4):
+        runningTotal = 0
+        numberOfDataPoints = 0
+        for key in participants:
+            if participants[key].testTimes[i] != "Unusable":
+                runningTotal += (participants[key].testTimes[i] - listOfAverages[i]) ** 2
+                numberOfDataPoints += 1
+        toFindSquareRootOf = runningTotal / numberOfDataPoints
+        standardDeviation = math.sqrt(toFindSquareRootOf)
+        listOfStandardDeviations.append(standardDeviation)
+    for key in standardDeviationByTest:
+        standardDeviationByTest[key] = round(listOfStandardDeviations[0], 4)
+        listOfStandardDeviations.pop(0)
+
+
+def printData(dictionary, title):
+    print("__________________________________")
+    print("Data:", title)
+    for key in dictionary:
+        print(key, dictionary[key])
+    print("----------------------------------")
+
+
+def main():
+    getData('data.csv')
+    # ---------------------------------------------------------------------
+    getMeans(participantDict)
+    printData(averageResponseTimeByTest, "Mean")
+    # ---------------------------------------------------------------------
+    getStandardDeviations(participantDict, averageResponseTimeByTest)
+    printData(standardDeviationByTest, "Standard Deviation")
+    # ---------------------------------------------------------------------
+
+
+main()
